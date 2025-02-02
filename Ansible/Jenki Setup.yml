@@ -1,0 +1,41 @@
+---
+- name: Install Jenkins on Ubuntu
+  hosts: jenkins_servers
+  become: yes  # Run tasks as sudo
+
+  tasks:
+    - name: Update APT package list
+      apt:
+        update_cache: yes
+
+    - name: Install Java (Required for Jenkins)
+      apt:
+        name: openjdk-11-jdk
+        state: present
+
+    - name: Add Jenkins repository key
+      shell: wget -q -O - https://pkg.jenkins.io/debian/jenkins.io.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc
+
+    - name: Add Jenkins APT repository
+      shell: echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list
+
+    - name: Update APT package list again
+      apt:
+        update_cache: yes
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Start and Enable Jenkins Service
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Allow Jenkins through UFW (Firewall)
+      ufw:
+        rule: allow
+        port: "8080"
+        proto: tcp
